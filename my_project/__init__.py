@@ -1,8 +1,14 @@
+"""
+2022
+apavelchak@gmail.com
+© Andrii Pavelchak
+"""
+
 import os
 import json
 import secrets
 from http import HTTPStatus
-from typing import Dict, Any
+from typing import Dict, Any, Optional
 
 import boto3
 from botocore.exceptions import BotoCoreError, ClientError
@@ -12,7 +18,7 @@ from flask_sqlalchemy import SQLAlchemy
 from sqlalchemy_utils import database_exists, create_database
 
 from my_project.auth.route import register_routes
-from typing import Optional
+
 # ---- constants & globals -----------------------------------------------------
 
 SECRET_KEY = "SECRET_KEY"
@@ -21,15 +27,15 @@ MYSQL_ROOT_USER = "MYSQL_ROOT_USER"
 MYSQL_ROOT_PASSWORD = "MYSQL_ROOT_PASSWORD"
 
 AWS_REGION = os.getenv("AWS_REGION", "eu-north-1")
-DB_SECRET_NAME_ENV = "DB_SECRET_NAME"          # напр. "lab/mysql"
+DB_SECRET_NAME_ENV = "DB_SECRET_NAME"  # напр. "lab/mysql"
 
 db = SQLAlchemy()
 todos = {}
-_secret_cache = None
+_secret_cache: Optional[dict] = None
 
 # ---- secrets helpers ---------------------------------------------------------
 
-def _fetch_secret_dict(secret_name: str) -> dict | None:
+def _fetch_secret_dict(secret_name: str) -> Optional[dict]:
     """Get and cache secret JSON from AWS Secrets Manager."""
     global _secret_cache
     if _secret_cache is not None:
@@ -70,7 +76,7 @@ def create_app(app_config: Dict[str, Any], additional_config: Dict[str, Any]) ->
 
     app = Flask(__name__)
     app.config["SECRET_KEY"] = secrets.token_hex(16)
-    app.config = {**app.config, **app_config}
+    app.config.update(app_config)
 
     _init_db(app)
     register_routes(app)
@@ -156,3 +162,10 @@ def _process_input_config(app_config: Dict[str, Any], additional_config: Dict[st
         root_user = os.getenv(MYSQL_ROOT_USER, additional_config.get(MYSQL_ROOT_USER, "root"))
         root_password = os.getenv(MYSQL_ROOT_PASSWORD, additional_config.get(MYSQL_ROOT_PASSWORD, "root"))
         app_config[SQLALCHEMY_DATABASE_URI] = uri.format(root_user, root_password)
+        return
+
+    # Якщо ми тут — немає ні ENV, ні секрету, ні плейсхолдерів у YAML → згенеруй зрозумілу помилку
+    raise RuntimeError(
+        "SQLALCHEMY_DATABASE_URI is not configured. "
+        "Set DATABASE_URL env, or provide DB_SECRET_NAME secret, or a valid URI in YAML."
+    )
