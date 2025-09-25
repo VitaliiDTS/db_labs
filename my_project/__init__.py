@@ -1,9 +1,3 @@
-"""
-2022
-apavelchak@gmail.com
-© Andrii Pavelchak
-"""
-
 import os
 import json
 import secrets
@@ -18,7 +12,7 @@ from flask_sqlalchemy import SQLAlchemy
 from sqlalchemy_utils import database_exists, create_database
 
 from my_project.auth.route import register_routes
-
+from typing import Optional
 # ---- constants & globals -----------------------------------------------------
 
 SECRET_KEY = "SECRET_KEY"
@@ -31,8 +25,7 @@ DB_SECRET_NAME_ENV = "DB_SECRET_NAME"          # напр. "lab/mysql"
 
 db = SQLAlchemy()
 todos = {}
-_secret_cache: dict | None = None
-
+_secret_cache = None
 
 # ---- secrets helpers ---------------------------------------------------------
 
