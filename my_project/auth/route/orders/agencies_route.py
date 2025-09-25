@@ -70,3 +70,22 @@ def get_agencies_by_phone(phone: str) -> Response:
     """
     agencies = agencies_controller.get_agencies_by_phone(phone)
     return make_response(jsonify([agency.put_into_dto() for agency in agencies]), HTTPStatus.OK)
+
+@agencies_bp.post('/multiple/procedure')
+def create_multiple_agencies_using_procedure() -> Response:
+    """
+    Створює 10 нових агентств у базі даних, викликаючи збережену процедуру.
+    """
+    agencies_controller.create_multiple_agencies_using_procedure()
+    return make_response("10 agencies created successfully using procedure", HTTPStatus.CREATED)
+
+@agencies_bp.post('/call-procedure')
+def call_procedure() -> Response:
+    """
+    Викликає збережену процедуру для створення та вставки даних.
+    """
+    try:
+        agencies_controller.call_create_and_insert_procedure()
+        return make_response(jsonify({"message": "Procedure successfully executed"}), HTTPStatus.OK)
+    except Exception as e:
+        return make_response(jsonify({"error": str(e)}), HTTPStatus.INTERNAL_SERVER_ERROR)

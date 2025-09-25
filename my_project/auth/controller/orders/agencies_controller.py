@@ -53,3 +53,15 @@ class AgenciesController(GeneralController):
         Отримує агенції за номером телефону.
         """
         return self._service.get_agencies_by_phone(phone)
+
+    def create_multiple_agencies_using_procedure(self) -> None:
+        """
+        Створює 10 нових агентств, використовуючи збережену процедуру.
+        """
+        self._service.create_multiple_agencies_using_procedure()
+
+    def call_create_and_insert_procedure(self):
+        """
+        Викликає збережену процедуру для створення та вставки даних.
+        """
+        self._service.call_create_and_insert_procedure()

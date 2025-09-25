@@ -1,4 +1,4 @@
-waitress==2.1.2
+waitress==3.0.1
 flask==2.3.2
 flask-sqlalchemy==3.0.5
 mysqlclient==2.2.0
@@ -10,4 +10,7 @@ pylint
 PyYAML
 jsonschema
 redis
-SQLAlchemy==1.4.48
+flasgger
+gunicorn
+alembic
+boto3

@@ -1,6 +1,8 @@
 from typing import List
 from my_project.auth.dao.general_dao import GeneralDAO
 from my_project.auth.domain.orders.agencies import Agencies
+from sqlalchemy import text
+
 
 class AgenciesDAO(GeneralDAO):
 
@@ -39,3 +41,25 @@ class AgenciesDAO(GeneralDAO):
 
         """
         return self._session.query(Agencies).filter(Agencies.id == agency_id).first()
+
+    def create_multiple_using_procedure(self) -> None:
+        """
+        Викликає збережену процедуру для вставки 10 агентств у базу даних.
+        """
+        try:
+            self._session.execute("CALL Insert10Agencies()")
+            self._session.commit()
+        except Exception as e:
+            self._session.rollback()
+            raise e
+
+    def call_create_and_insert_procedure(self):
+        """
+        Викликає збережену процедуру для створення та вставки даних.
+        """
+        try:
+            self._session.execute(text("CALL create_and_insert_into_new_tables()"))
+            self._session.commit()
+        except Exception as e:
+            self._session.rollback()
+            raise Exception(f"Error executing stored procedure: {str(e)}")

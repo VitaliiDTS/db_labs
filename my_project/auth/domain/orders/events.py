@@ -15,9 +15,11 @@ class Events(db.Model, IDto):
     address = db.Column(db.String(60), nullable=False)
     total_price = db.Column(db.Integer, nullable=False)
 
-    # Foreign key and relationship to `EventTypes`
     event_types_id = db.Column(db.Integer, db.ForeignKey("event_types.id"), nullable=False)
     event_type = db.relationship("EventTypes", back_populates="events")
+
+    # Додаємо зв'язок з Payments
+    payments = db.relationship("Payments", back_populates="event", cascade="all, delete-orphan")
 
     def __repr__(self) -> str:
         return (

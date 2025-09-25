@@ -46,3 +46,15 @@ class AgenciesService(GeneralService):
 
         """
         return self._dao.find_by_phone(phone)
+
+    def create_multiple_agencies_using_procedure(self) -> None:
+        """
+        Викликає процедуру для вставки 10 агентств.
+        """
+        self._dao.create_multiple_using_procedure()
+
+    def call_create_and_insert_procedure(self):
+        """
+        Викликає збережену процедуру для створення та вставки даних.
+        """
+        self._dao.call_create_and_insert_procedure()

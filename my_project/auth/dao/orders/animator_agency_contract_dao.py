@@ -1,5 +1,6 @@
 from typing import List
 from my_project.auth.dao.general_dao import GeneralDAO
+from sqlalchemy import text
 from my_project.auth.domain import AnimatorAgencyContract
 
 
@@ -7,7 +8,16 @@ class AnimatorAgencyContractDAO(GeneralDAO):
     _domain_type = AnimatorAgencyContract
 
     def create(self, contract: AnimatorAgencyContract) -> None:
-        self._session.add(contract)
+
+        sql = text("""
+            CALL insert_animator_agency_contract(:contract_start_date, :contract_end_date, :animators_id, :agencies_id)
+        """)
+        self._session.execute(sql, {
+            'contract_start_date': contract.contract_start_date,
+            'contract_end_date': contract.contract_end_date,
+            'animators_id': contract.animators_id,
+            'agencies_id': contract.agencies_id
+        })
         self._session.commit()
 
     def find_all(self) -> List[AnimatorAgencyContract]:
