@@ -7,21 +7,42 @@ on:
 jobs:
   deploy:
     runs-on: ubuntu-latest
+    env:
+      HOST: ${{ secrets.EC2_HOST }}
+      USER: ${{ secrets.EC2_USER }}
+      SSH_KEY: ${{ secrets.SSH_KEY }}
+
     steps:
       - name: Checkout
         uses: actions/checkout@v4
 
-      - name: Write SSH key and test connection
+      - name: Write SSH key
         shell: bash
         run: |
           set -euxo pipefail
-          # 1) пишемо ключ у файл, прибираючи CRLF якщо випадково є
-          printf '%s\n' "${{ secrets.SSH_KEY }}" | sed 's/\r$//' > key.pem
+          # записуємо приватний ключ у файл і прибираємо можливі CRLF
+          printf '%s\n' "$SSH_KEY" | sed 's/\r$//' > key.pem
           chmod 600 key.pem
 
-          # 2) пробний конект
+      - name: Debug reachability (optional but helpful)
+        shell: bash
+        run: |
+          set -euxo pipefail
+          echo "len(HOST)=$(printf '%s' "$HOST" | wc -c)"
+          echo "len(USER)=$(printf '%s' "$USER" | wc -c)"
+          # DNS/резолв
+          getent ahosts "$HOST" || true
+          # TCP 22
+          nc -vz -w 5 "$HOST" 22 || true
+          # Ping може бути заблокований — не критично
+          ping -c1 -W2 "$HOST" || true
+
+      - name: Test SSH handshake
+        shell: bash
+        run: |
+          set -euxo pipefail
           ssh -vvv -o StrictHostKeyChecking=no -i key.pem \
-            ${{ secrets.EC2_USER }}@${{ secrets.EC2_HOST }} 'echo OK && uname -a && whoami'
+            "${USER}@${HOST}" 'echo OK && uname -a && whoami'
 
       - name: Run deploy script
         if: ${{ success() }}
@@ -29,4 +50,4 @@ jobs:
         run: |
           set -euxo pipefail
           ssh -o StrictHostKeyChecking=no -i key.pem \
-            ${{ secrets.EC2_USER }}@${{ secrets.EC2_HOST }} '/opt/flaskapp/scripts/deploy.sh'
+            "${USER}@${HOST}" '/opt/flaskapp/scripts/deploy.sh'
