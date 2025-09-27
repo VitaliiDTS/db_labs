@@ -93,31 +93,92 @@ def create_app(app_config: Dict[str, Any], additional_config: Dict[str, Any]) ->
 # ---- swagger demo (left as-is) ----------------------------------------------
 
 def _init_swagger(app: Flask) -> None:
+    from flask_restx import Api
     restx_api = Api(
         app,
         title="VItalik Dats backend",
         description="animators db backend",
-        doc="/docs"
+        doc="/docs",
     )
-    @restx_api.route('/number/<string:todo_id>')
-    class TodoSimple(Resource):
-        @staticmethod
-        def get(todo_id):
-            return todos, 202
 
-        @staticmethod
-        def put(todo_id):
-            todos[todo_id] = todo_id
-            return todos, HTTPStatus.CREATED
+    from my_project.common.restx_crud import make_crud_namespace
 
-        @staticmethod
-        def post(todo_id):
-            todos[todo_id] = {"task": f"New task with ID {todo_id}"}
-            return todos[todo_id], HTTPStatus.CREATED
 
-    @app.route("/hi")
-    def hello_world():
-        return todos, HTTPStatus.OK
+    from my_project.auth.domain import (
+        Animators, Agencies, Events, EventTypes, Payments, AnimatorAgencyContract
+    )
+
+
+    from my_project.auth.controller import (
+        animators_controller,
+        agencies_controller,
+        events_controller,
+        event_types_controller,
+        payments_controller,
+        animator_agency_contract_controller,
+    )
+
+
+    restx_api.add_namespace(make_crud_namespace(
+        name="animators", path="/animators", model_cls=Animators,
+        list_fn=animators_controller.find_all,
+        get_fn=animators_controller.find_by_id,
+        create_fn=animators_controller.create_animator,
+        update_fn=animators_controller.update_animator,
+        delete_fn=animators_controller.delete_animator,
+    ))
+
+
+    restx_api.add_namespace(make_crud_namespace(
+        name="agencies", path="/agencies", model_cls=Agencies,
+        list_fn=agencies_controller.find_all,
+        get_fn=agencies_controller.find_by_id,
+        create_fn=agencies_controller.create_agency,
+        update_fn=agencies_controller.update_agency,
+        delete_fn=agencies_controller.delete_agency,
+    ))
+
+
+    restx_api.add_namespace(make_crud_namespace(
+        name="event_types", path="/event_types", model_cls=EventTypes,
+        list_fn=event_types_controller.find_all,
+        get_fn=event_types_controller.find_by_id,
+        create_fn=event_types_controller.create_event_type,
+        update_fn=event_types_controller.update_event_type,
+        delete_fn=event_types_controller.delete_event_type,
+    ))
+
+
+    restx_api.add_namespace(make_crud_namespace(
+        name="events", path="/events", model_cls=Events,
+        list_fn=events_controller.find_all,
+        get_fn=events_controller.find_by_id,
+        create_fn=events_controller.create_event,
+        update_fn=events_controller.update_event,
+        delete_fn=events_controller.delete_event,
+    ))
+
+
+    restx_api.add_namespace(make_crud_namespace(
+        name="payments", path="/payments", model_cls=Payments,
+        list_fn=payments_controller.find_all,
+        get_fn=payments_controller.find_by_id,
+        create_fn=payments_controller.create_payment,
+        update_fn=payments_controller.update_payment,
+        delete_fn=payments_controller.delete_payment,
+    ))
+
+
+    restx_api.add_namespace(make_crud_namespace(
+        name="animator_agency_contracts", path="/animator_agency_contracts",
+        model_cls=AnimatorAgencyContract,
+        list_fn=animator_agency_contract_controller.find_all,
+        get_fn=animator_agency_contract_controller.find_by_id,
+        create_fn=animator_agency_contract_controller.create_contract,
+        update_fn=animator_agency_contract_controller.update_contract,
+        delete_fn=animator_agency_contract_controller.delete_contract,
+    ))
+
 
 
 # ---- db init ----------------------------------------------------------------
