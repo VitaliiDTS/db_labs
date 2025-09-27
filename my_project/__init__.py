@@ -93,8 +93,12 @@ def create_app(app_config: Dict[str, Any], additional_config: Dict[str, Any]) ->
 # ---- swagger demo (left as-is) ----------------------------------------------
 
 def _init_swagger(app: Flask) -> None:
-    restx_api = Api(app, title='VItalik Dats backend', description='animators db backend')
-
+    restx_api = Api(
+        app,
+        title="VItalik Dats backend",
+        description="animators db backend",
+        doc="/docs"
+    )
     @restx_api.route('/number/<string:todo_id>')
     class TodoSimple(Resource):
         @staticmethod
