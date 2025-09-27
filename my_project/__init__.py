@@ -1,9 +1,3 @@
-"""
-2022
-apavelchak@gmail.com
-© Andrii Pavelchak
-"""
-
 import os
 import json
 import secrets
@@ -13,13 +7,13 @@ from typing import Dict, Any, Optional
 import boto3
 from botocore.exceptions import BotoCoreError, ClientError
 from flask import Flask
-from flask_restx import Api, Resource
+from flask_restx import Api
 from flask_sqlalchemy import SQLAlchemy
 from sqlalchemy_utils import database_exists, create_database
 
 from my_project.auth.route import register_routes
 
-# ---- constants & globals -----------------------------------------------------
+# --------------------------- constants & globals -----------------------------
 
 SECRET_KEY = "SECRET_KEY"
 SQLALCHEMY_DATABASE_URI = "SQLALCHEMY_DATABASE_URI"
@@ -27,13 +21,14 @@ MYSQL_ROOT_USER = "MYSQL_ROOT_USER"
 MYSQL_ROOT_PASSWORD = "MYSQL_ROOT_PASSWORD"
 
 AWS_REGION = os.getenv("AWS_REGION", "eu-north-1")
-DB_SECRET_NAME_ENV = "DB_SECRET_NAME"  # напр. "lab/mysql"
+DB_SECRET_NAME_ENV = "DB_SECRET_NAME"  # e.g. "lab/mysql"
 
 db = SQLAlchemy()
 todos = {}
 _secret_cache: Optional[dict] = None
 
-# ---- secrets helpers ---------------------------------------------------------
+
+# ------------------------------- secrets helpers ----------------------------
 
 def _fetch_secret_dict(secret_name: str) -> Optional[dict]:
     """Get and cache secret JSON from AWS Secrets Manager."""
@@ -64,7 +59,7 @@ def _build_sqlalchemy_uri_from_secret(data: dict) -> str:
     return f"mysql+{drv}://{user}:{pwd}@{host}:{port}/{dbname}?charset=utf8mb4"
 
 
-# ---- app factory -------------------------------------------------------------
+# -------------------------------- app factory -------------------------------
 
 def create_app(app_config: Dict[str, Any], additional_config: Dict[str, Any]) -> Flask:
     """
@@ -82,7 +77,6 @@ def create_app(app_config: Dict[str, Any], additional_config: Dict[str, Any]) ->
     register_routes(app)
     _init_swagger(app)
 
-    # health endpoint for checks/load balancer
     @app.get("/health")
     def health():
         return {"status": "ok"}, 200
@@ -90,11 +84,19 @@ def create_app(app_config: Dict[str, Any], additional_config: Dict[str, Any]) ->
     return app
 
 
-# ---- swagger demo (left as-is) ----------------------------------------------
+# --------------------------------- swagger ----------------------------------
+
+def _pick(controller, *names):
+    """Return first existing callable method from the controller."""
+    for n in names:
+        fn = getattr(controller, n, None)
+        if callable(fn):
+            return fn
+    raise AttributeError(f"{controller} has none of {names}")
+
 
 def _init_swagger(app: Flask) -> None:
-    from flask_restx import Api
-    restx_api = Api(
+    api = Api(
         app,
         title="VItalik Dats backend",
         description="animators db backend",
@@ -102,13 +104,11 @@ def _init_swagger(app: Flask) -> None:
     )
 
     from my_project.common.restx_crud import make_crud_namespace
-
-
     from my_project.auth.domain import (
         Animators, Agencies, Events, EventTypes, Payments, AnimatorAgencyContract
     )
 
-
+    # якщо зроблено реекспорт у controller/__init__.py:
     from my_project.auth.controller import (
         animators_controller,
         agencies_controller,
@@ -118,70 +118,69 @@ def _init_swagger(app: Flask) -> None:
         animator_agency_contract_controller,
     )
 
-
-    restx_api.add_namespace(make_crud_namespace(
+    # animators
+    api.add_namespace(make_crud_namespace(
         name="animators", path="/animators", model_cls=Animators,
-        list_fn=animators_controller.find_all,
-        get_fn=animators_controller.find_by_id,
-        create_fn=animators_controller.create_animator,
-        update_fn=animators_controller.update_animator,
-        delete_fn=animators_controller.delete_animator,
+        list_fn=_pick(animators_controller, "find_all", "get_all_animators", "get_all"),
+        get_fn=_pick(animators_controller, "find_by_id", "get_animator_by_id", "get_by_id"),
+        create_fn=_pick(animators_controller, "create_animator", "create"),
+        update_fn=_pick(animators_controller, "update_animator", "update"),
+        delete_fn=_pick(animators_controller, "delete_animator", "delete"),
     ))
 
-
-    restx_api.add_namespace(make_crud_namespace(
+    # agencies
+    api.add_namespace(make_crud_namespace(
         name="agencies", path="/agencies", model_cls=Agencies,
-        list_fn=agencies_controller.find_all,
-        get_fn=agencies_controller.find_by_id,
-        create_fn=agencies_controller.create_agency,
-        update_fn=agencies_controller.update_agency,
-        delete_fn=agencies_controller.delete_agency,
+        list_fn=_pick(agencies_controller, "find_all", "get_all_agencies", "get_all"),
+        get_fn=_pick(agencies_controller, "find_by_id", "get_agency_by_id", "get_by_id"),
+        create_fn=_pick(agencies_controller, "create_agency", "create"),
+        update_fn=_pick(agencies_controller, "update_agency", "update"),
+        delete_fn=_pick(agencies_controller, "delete_agency", "delete"),
     ))
 
-
-    restx_api.add_namespace(make_crud_namespace(
+    # event_types
+    api.add_namespace(make_crud_namespace(
         name="event_types", path="/event_types", model_cls=EventTypes,
-        list_fn=event_types_controller.find_all,
-        get_fn=event_types_controller.find_by_id,
-        create_fn=event_types_controller.create_event_type,
-        update_fn=event_types_controller.update_event_type,
-        delete_fn=event_types_controller.delete_event_type,
+        list_fn=_pick(event_types_controller, "find_all", "get_all_event_types", "get_all"),
+        get_fn=_pick(event_types_controller, "find_by_id", "get_event_type_by_id", "get_by_id"),
+        create_fn=_pick(event_types_controller, "create_event_type", "create"),
+        update_fn=_pick(event_types_controller, "update_event_type", "update"),
+        delete_fn=_pick(event_types_controller, "delete_event_type", "delete"),
     ))
 
-
-    restx_api.add_namespace(make_crud_namespace(
+    # events
+    api.add_namespace(make_crud_namespace(
         name="events", path="/events", model_cls=Events,
-        list_fn=events_controller.find_all,
-        get_fn=events_controller.find_by_id,
-        create_fn=events_controller.create_event,
-        update_fn=events_controller.update_event,
-        delete_fn=events_controller.delete_event,
+        list_fn=_pick(events_controller, "find_all", "get_all_events", "get_all"),
+        get_fn=_pick(events_controller, "find_by_id", "get_event_by_id", "get_by_id"),
+        create_fn=_pick(events_controller, "create_event", "create"),
+        update_fn=_pick(events_controller, "update_event", "update"),
+        delete_fn=_pick(events_controller, "delete_event", "delete"),
     ))
 
-
-    restx_api.add_namespace(make_crud_namespace(
+    # payments (тут у тебе методи типу get_* / update_payment / delete_payment)
+    api.add_namespace(make_crud_namespace(
         name="payments", path="/payments", model_cls=Payments,
-        list_fn=payments_controller.find_all,
-        get_fn=payments_controller.find_by_id,
-        create_fn=payments_controller.create_payment,
-        update_fn=payments_controller.update_payment,
-        delete_fn=payments_controller.delete_payment,
+        list_fn=_pick(payments_controller, "get_all_payments", "find_all", "get_all"),
+        get_fn=_pick(payments_controller, "get_payment_by_id", "find_by_id", "get_by_id"),
+        create_fn=_pick(payments_controller, "create_payment", "create"),
+        update_fn=_pick(payments_controller, "update_payment", "update"),
+        delete_fn=_pick(payments_controller, "delete_payment", "delete"),
     ))
 
-
-    restx_api.add_namespace(make_crud_namespace(
+    # animator_agency_contracts
+    api.add_namespace(make_crud_namespace(
         name="animator_agency_contracts", path="/animator_agency_contracts",
         model_cls=AnimatorAgencyContract,
-        list_fn=animator_agency_contract_controller.find_all,
-        get_fn=animator_agency_contract_controller.find_by_id,
-        create_fn=animator_agency_contract_controller.create_contract,
-        update_fn=animator_agency_contract_controller.update_contract,
-        delete_fn=animator_agency_contract_controller.delete_contract,
+        list_fn=_pick(animator_agency_contract_controller, "find_all", "get_all_contracts", "get_all"),
+        get_fn=_pick(animator_agency_contract_controller, "find_by_id", "get_contract_by_id", "get_by_id"),
+        create_fn=_pick(animator_agency_contract_controller, "create_contract", "create"),
+        update_fn=_pick(animator_agency_contract_controller, "update_contract", "update"),
+        delete_fn=_pick(animator_agency_contract_controller, "delete_contract", "delete"),
     ))
 
 
-
-# ---- db init ----------------------------------------------------------------
+# --------------------------------- db init -----------------------------------
 
 def _init_db(app: Flask) -> None:
     """Initializes DB with SQLAlchemy."""
@@ -199,7 +198,7 @@ def _init_db(app: Flask) -> None:
         db.create_all()
 
 
-# ---- config processing -------------------------------------------------------
+# --------------------------- config processing -------------------------------
 
 def _process_input_config(app_config: Dict[str, Any], additional_config: Dict[str, Any]) -> None:
     """
@@ -229,7 +228,7 @@ def _process_input_config(app_config: Dict[str, Any], additional_config: Dict[st
         app_config[SQLALCHEMY_DATABASE_URI] = uri.format(root_user, root_password)
         return
 
-    # Якщо ми тут — немає ні ENV, ні секрету, ні плейсхолдерів у YAML → згенеруй зрозумілу помилку
+    # Якщо ми тут — немає ні ENV, ні секрету, ні валідного URI у YAML
     raise RuntimeError(
         "SQLALCHEMY_DATABASE_URI is not configured. "
         "Set DATABASE_URL env, or provide DB_SECRET_NAME secret, or a valid URI in YAML."

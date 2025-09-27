@@ -30,3 +30,12 @@ class PaymentsController(GeneralController):
         Отримує статистику для amount.
         """
         return self._service.get_amount_statistic(operation)
+
+    def update_payment(self, payment_id: int, payment: Payments) -> None:
+        self._service.update(payment_id, payment)
+
+    def delete_payment(self, payment_id: int) -> None:
+        self._service.delete(payment_id)
+
+    def get_amount_statistic(self, operation: str) -> float:
+        return self._service.get_amount_statistic(operation)
