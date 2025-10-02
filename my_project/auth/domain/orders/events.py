@@ -7,21 +7,21 @@ from my_project.auth.domain.i_dto import IDto
 
 
 def _to_date(v: Any) -> Optional[_date]:
-    """Приймає date | str | None -> повертає date | None."""
+
     if v is None or isinstance(v, _date):
         return v
     if isinstance(v, str) and v.strip():
-        # підтримка формату 'YYYY-MM-DD'
+
         return _date.fromisoformat(v)
     return None
 
 
 def _to_time(v: Any) -> Optional[_time]:
-    """Приймає time | str | None -> повертає time | None."""
+
     if v is None or isinstance(v, _time):
         return v
     if isinstance(v, str) and v.strip():
-        # підтримка 'HH:MM' або 'HH:MM:SS'
+
         return _time.fromisoformat(v)
     return None
 
@@ -39,7 +39,7 @@ class Events(db.Model, IDto):
     event_types_id = db.Column(db.Integer, db.ForeignKey("event_types.id"), nullable=False)
     event_type = db.relationship("EventTypes", back_populates="events")
 
-    # зв'язок з Payments (має бути back_populates="event" у моделі Payments)
+
     payments = db.relationship("Payments", back_populates="event", cascade="all, delete-orphan")
 
     def __repr__(self) -> str:
@@ -50,7 +50,7 @@ class Events(db.Model, IDto):
         )
 
     def put_into_dto(self) -> Dict[str, Any]:
-        """Безпечна серіалізація у JSON-DTO."""
+
         d = self.date
         st = self.start_time
         et = self.end_time
@@ -58,7 +58,7 @@ class Events(db.Model, IDto):
         def _iso(v: Any) -> Optional[str]:
             if v is None:
                 return None
-            # якщо це date/time — isoformat(); інакше просто str(...)
+
             return v.isoformat() if hasattr(v, "isoformat") else str(v)
 
         return {
@@ -73,7 +73,7 @@ class Events(db.Model, IDto):
 
     @staticmethod
     def create_from_dto(dto_dict: Dict[str, Any]) -> Events:
-        """Створює доменний об’єкт з DTO, гарантовано парсить дату/час."""
+
         return Events(
             date=_to_date(dto_dict.get("date")),
             start_time=_to_time(dto_dict.get("start_time")),

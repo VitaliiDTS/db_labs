@@ -5,7 +5,7 @@ from .orders.event_types_controller import EventTypesController
 from .orders.payments_controller import PaymentsController
 from .orders.animator_agency_contract_controller import AnimatorAgencyContractController
 
-# інстанси контролерів (якщо ти їх створюєш як сінглтони — зроби тут)
+
 animators_controller = AnimatorsController()
 agencies_controller = AgenciesController()
 events_controller = EventsController()

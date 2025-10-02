@@ -1,9 +1,3 @@
-"""
-2022
-apavelchak@gmail.com
-© Andrii Pavelchak
-"""
-
 
 from .orders.agencies_service import AgenciesService
 from .orders.animators_service import AnimatorsService

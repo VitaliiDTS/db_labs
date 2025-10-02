@@ -8,9 +8,7 @@ payments_bp = Blueprint('payments', __name__, url_prefix='/payments')
 
 @payments_bp.get('')
 def get_all_payments() -> Response:
-    """
-    Отримує всі платежі з бази даних.
-    """
+
     payments = payments_controller.get_all_payments()
     payments_dto = [payment.put_into_dto() for payment in payments]
     return make_response(jsonify(payments_dto), HTTPStatus.OK)
@@ -18,9 +16,7 @@ def get_all_payments() -> Response:
 
 @payments_bp.post('')
 def create_payment() -> Response:
-    """
-    Створює новий платіж в базі даних.
-    """
+
     content = request.get_json()
     payment = Payments.create_from_dto(content)
     payments_controller.create_payment(payment)
@@ -29,9 +25,7 @@ def create_payment() -> Response:
 
 @payments_bp.get('/statistic/<string:operation>')
 def get_amount_statistic(operation: str) -> Response:
-    """
-    Отримує статистику для стовпця amount.
-    """
+
     if operation not in ['Max', 'Min', 'Sum', 'Avg']:
         return make_response({"error": "Invalid operation"}, HTTPStatus.BAD_REQUEST)
 

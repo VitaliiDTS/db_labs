@@ -1,8 +1,3 @@
-"""
-2022
-apavelchak@gmail.com
-© Andrii Pavelchak
-"""
 
 from setuptools import setup, find_packages
 

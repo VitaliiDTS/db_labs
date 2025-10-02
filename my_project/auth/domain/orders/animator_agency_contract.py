@@ -24,7 +24,7 @@ class AnimatorAgencyContract(db.Model):
             f"animators_id={self.animators_id}, agencies_id={self.agencies_id})"
         )
 
-    # ---- DTO ----
+
     def put_into_dto(self) -> Dict[str, Any]:
         return {
             "id": self.id,
@@ -38,7 +38,7 @@ class AnimatorAgencyContract(db.Model):
     def _to_date(v: Any) -> date:
         if isinstance(v, date):
             return v
-        # очікуємо ISO-рядок 'YYYY-MM-DD'
+
         return date.fromisoformat(str(v))
 
     @staticmethod

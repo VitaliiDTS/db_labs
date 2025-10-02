@@ -13,7 +13,6 @@ from sqlalchemy_utils import database_exists, create_database
 
 from my_project.auth.route import register_routes
 
-# --------------------------- constants & globals -----------------------------
 
 SECRET_KEY = "SECRET_KEY"
 SQLALCHEMY_DATABASE_URI = "SQLALCHEMY_DATABASE_URI"
@@ -21,17 +20,16 @@ MYSQL_ROOT_USER = "MYSQL_ROOT_USER"
 MYSQL_ROOT_PASSWORD = "MYSQL_ROOT_PASSWORD"
 
 AWS_REGION = os.getenv("AWS_REGION", "eu-north-1")
-DB_SECRET_NAME_ENV = "DB_SECRET_NAME"  # e.g. "lab/mysql"
+DB_SECRET_NAME_ENV = "DB_SECRET_NAME"
 
 db = SQLAlchemy()
 todos = {}
 _secret_cache: Optional[dict] = None
 
 
-# ------------------------------- secrets helpers ----------------------------
 
 def _fetch_secret_dict(secret_name: str) -> Optional[dict]:
-    """Get and cache secret JSON from AWS Secrets Manager."""
+
     global _secret_cache
     if _secret_cache is not None:
         return _secret_cache
@@ -49,7 +47,7 @@ def _fetch_secret_dict(secret_name: str) -> Optional[dict]:
 
 
 def _build_sqlalchemy_uri_from_secret(data: dict) -> str:
-    """Compose SQLAlchemy URI from secret dict."""
+
     user = data["username"]
     pwd = data["password"]
     host = data["host"]
@@ -59,14 +57,10 @@ def _build_sqlalchemy_uri_from_secret(data: dict) -> str:
     return f"mysql+{drv}://{user}:{pwd}@{host}:{port}/{dbname}?charset=utf8mb4"
 
 
-# -------------------------------- app factory -------------------------------
+
 
 def create_app(app_config: Dict[str, Any], additional_config: Dict[str, Any]) -> Flask:
-    """
-    Creates Flask application
-    :param app_config: Flask configuration (from YAML)
-    :param additional_config: extra config (from YAML)
-    """
+
     _process_input_config(app_config, additional_config)
 
     app = Flask(__name__)
@@ -84,10 +78,9 @@ def create_app(app_config: Dict[str, Any], additional_config: Dict[str, Any]) ->
     return app
 
 
-# --------------------------------- swagger ----------------------------------
 
 def _pick(controller, *names):
-    """Return first existing callable method from the controller."""
+
     for n in names:
         fn = getattr(controller, n, None)
         if callable(fn):
@@ -108,7 +101,7 @@ def _init_swagger(app: Flask) -> None:
         Animators, Agencies, Events, EventTypes, Payments, AnimatorAgencyContract
     )
 
-    # якщо зроблено реекспорт у controller/__init__.py:
+
     from my_project.auth.controller import (
         animators_controller,
         agencies_controller,
@@ -118,7 +111,7 @@ def _init_swagger(app: Flask) -> None:
         animator_agency_contract_controller,
     )
 
-    # animators
+
     api.add_namespace(make_crud_namespace(
         name="animators", path="/animators", model_cls=Animators,
         list_fn=_pick(animators_controller, "find_all", "get_all_animators", "get_all"),
@@ -128,7 +121,7 @@ def _init_swagger(app: Flask) -> None:
         delete_fn=_pick(animators_controller, "delete_animator", "delete"),
     ))
 
-    # agencies
+
     api.add_namespace(make_crud_namespace(
         name="agencies", path="/agencies", model_cls=Agencies,
         list_fn=_pick(agencies_controller, "find_all", "get_all_agencies", "get_all"),
@@ -138,7 +131,7 @@ def _init_swagger(app: Flask) -> None:
         delete_fn=_pick(agencies_controller, "delete_agency", "delete"),
     ))
 
-    # event_types
+
     api.add_namespace(make_crud_namespace(
         name="event_types", path="/event_types", model_cls=EventTypes,
         list_fn=_pick(event_types_controller, "find_all", "get_all_event_types", "get_all"),
@@ -148,7 +141,7 @@ def _init_swagger(app: Flask) -> None:
         delete_fn=_pick(event_types_controller, "delete_event_type", "delete"),
     ))
 
-    # events
+
     api.add_namespace(make_crud_namespace(
         name="events", path="/events", model_cls=Events,
         list_fn=_pick(events_controller, "find_all", "get_all_events", "get_all"),
@@ -158,7 +151,7 @@ def _init_swagger(app: Flask) -> None:
         delete_fn=_pick(events_controller, "delete_event", "delete"),
     ))
 
-    # payments (тут у тебе методи типу get_* / update_payment / delete_payment)
+
     api.add_namespace(make_crud_namespace(
         name="payments", path="/payments", model_cls=Payments,
         list_fn=_pick(payments_controller, "get_all_payments", "find_all", "get_all"),
@@ -168,7 +161,7 @@ def _init_swagger(app: Flask) -> None:
         delete_fn=_pick(payments_controller, "delete_payment", "delete"),
     ))
 
-    # animator_agency_contracts
+
     api.add_namespace(make_crud_namespace(
         name="animator_agency_contracts", path="/animator_agency_contracts",
         model_cls=AnimatorAgencyContract,
@@ -180,12 +173,11 @@ def _init_swagger(app: Flask) -> None:
     ))
 
 
-# --------------------------------- db init -----------------------------------
 
 def _init_db(app: Flask) -> None:
-    """Initializes DB with SQLAlchemy."""
+
     db.init_app(app)
-    # На RDS create_database може бути заборонено: загортаємо обережно
+
     try:
         uri = app.config[SQLALCHEMY_DATABASE_URI]
         if not database_exists(uri):
@@ -198,29 +190,23 @@ def _init_db(app: Flask) -> None:
         db.create_all()
 
 
-# --------------------------- config processing -------------------------------
 
 def _process_input_config(app_config: Dict[str, Any], additional_config: Dict[str, Any]) -> None:
-    """
-    Finalize app_config[SQLALCHEMY_DATABASE_URI] with precedence:
-      1) env: DATABASE_URL
-      2) AWS Secrets Manager (DB_SECRET_NAME / default 'lab/mysql')
-      3) YAML (and only format with root if URI has '{}' placeholders)
-    """
-    # 1) explicit env override
+
+
     env_url = os.getenv("DATABASE_URL")
     if env_url:
         app_config[SQLALCHEMY_DATABASE_URI] = env_url
         return
 
-    # 2) secrets manager
+
     secret_name = os.getenv(DB_SECRET_NAME_ENV, "lab/mysql")
     secret = _fetch_secret_dict(secret_name)
     if secret:
         app_config[SQLALCHEMY_DATABASE_URI] = _build_sqlalchemy_uri_from_secret(secret)
         return
 
-    # 3) fallback to YAML (format only if placeholders exist)
+
     uri = app_config.get(SQLALCHEMY_DATABASE_URI, "")
     if "{" in uri:
         root_user = os.getenv(MYSQL_ROOT_USER, additional_config.get(MYSQL_ROOT_USER, "root"))
@@ -228,7 +214,7 @@ def _process_input_config(app_config: Dict[str, Any], additional_config: Dict[st
         app_config[SQLALCHEMY_DATABASE_URI] = uri.format(root_user, root_password)
         return
 
-    # Якщо ми тут — немає ні ENV, ні секрету, ні валідного URI у YAML
+
     raise RuntimeError(
         "SQLALCHEMY_DATABASE_URI is not configured. "
         "Set DATABASE_URL env, or provide DB_SECRET_NAME secret, or a valid URI in YAML."

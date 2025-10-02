@@ -28,11 +28,7 @@ class Agencies(db.Model, IDto):
 
     @staticmethod
     def create_from_dto(dto_dict: Dict[str, Any]) -> Agencies:
-        """
-        Creates domain object from DTO
-        :param dto_dict: DTO object
-        :return: Domain object
-        """
+
         return Agencies(
             name=dto_dict.get("name"),
             address=dto_dict.get("address"),

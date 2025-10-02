@@ -6,9 +6,7 @@ from .error_handler import err_handler_bp
 
 
 def register_routes(app: Flask) -> None:
-    """
-    Registers all necessary Blueprint routes
-    """
+
     app.register_blueprint(err_handler_bp)
 
 

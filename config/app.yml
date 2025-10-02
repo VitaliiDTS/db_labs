@@ -5,11 +5,8 @@ COMMON: &common
 development:
   <<: *common
   DEBUG: True
-  # під себе локально (будь-який dev варіант):
-  # SQLALCHEMY_DATABASE_URI: "sqlite:///dev.sqlite3"
-  # або локальний mysql:
-  # SQLALCHEMY_DATABASE_URI: "mysql+mysqldb://root:vitalik@localhost/animators_db?charset=utf8mb4"
+
 
 production:
   <<: *common
-  # тут не кладемо паролі/URI — їх дасть Secrets Manager
+
