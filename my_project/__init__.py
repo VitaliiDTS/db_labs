@@ -92,7 +92,7 @@ def _init_swagger(app: Flask) -> None:
     api = Api(
         app,
         title="VItalik Dats backend",
-        description="animators db backenduuu/",
+        description="animators db backend",
         doc="/docs",
     )
 
