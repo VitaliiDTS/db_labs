@@ -34,7 +34,6 @@ def make_crud_namespace(
     model_cls: Type[DeclarativeMeta],
     *,
     list_fn: Callable[[], list],
-    get_fn: Callable[[int], Any],
     create_fn: Callable[[Any], None],
     update_fn: Callable[[int, Any], None],
     delete_fn: Callable[[int], None],
