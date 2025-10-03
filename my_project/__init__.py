@@ -115,6 +115,7 @@ def _init_swagger(app: Flask) -> None:
     api.add_namespace(make_crud_namespace(
         name="animators", path="/animators", model_cls=Animators,
         list_fn=_pick(animators_controller, "find_all", "get_all_animators", "get_all"),
+        get_fn=_pick(animators_controller, "find_by_id", "get_animator_by_id", "get_by_id"),
         create_fn=_pick(animators_controller, "create_animator", "create"),
         update_fn=_pick(animators_controller, "update_animator", "update"),
         delete_fn=_pick(animators_controller, "delete_animator", "delete"),
@@ -124,6 +125,7 @@ def _init_swagger(app: Flask) -> None:
     api.add_namespace(make_crud_namespace(
         name="agencies", path="/agencies", model_cls=Agencies,
         list_fn=_pick(agencies_controller, "find_all", "get_all_agencies", "get_all"),
+        get_fn=_pick(agencies_controller, "find_by_id", "get_agency_by_id", "get_by_id"),
         create_fn=_pick(agencies_controller, "create_agency", "create"),
         update_fn=_pick(agencies_controller, "update_agency", "update"),
         delete_fn=_pick(agencies_controller, "delete_agency", "delete"),
@@ -133,6 +135,7 @@ def _init_swagger(app: Flask) -> None:
     api.add_namespace(make_crud_namespace(
         name="event_types", path="/event_types", model_cls=EventTypes,
         list_fn=_pick(event_types_controller, "find_all", "get_all_event_types", "get_all"),
+        get_fn=_pick(event_types_controller, "find_by_id", "get_event_type_by_id", "get_by_id"),
         create_fn=_pick(event_types_controller, "create_event_type", "create"),
         update_fn=_pick(event_types_controller, "update_event_type", "update"),
         delete_fn=_pick(event_types_controller, "delete_event_type", "delete"),
@@ -142,6 +145,7 @@ def _init_swagger(app: Flask) -> None:
     api.add_namespace(make_crud_namespace(
         name="events", path="/events", model_cls=Events,
         list_fn=_pick(events_controller, "find_all", "get_all_events", "get_all"),
+        get_fn=_pick(events_controller, "find_by_id", "get_event_by_id", "get_by_id"),
         create_fn=_pick(events_controller, "create_event", "create"),
         update_fn=_pick(events_controller, "update_event", "update"),
         delete_fn=_pick(events_controller, "delete_event", "delete"),
@@ -151,6 +155,7 @@ def _init_swagger(app: Flask) -> None:
     api.add_namespace(make_crud_namespace(
         name="payments", path="/payments", model_cls=Payments,
         list_fn=_pick(payments_controller, "get_all_payments", "find_all", "get_all"),
+        get_fn=_pick(payments_controller, "get_payment_by_id", "find_by_id", "get_by_id"),
         create_fn=_pick(payments_controller, "create_payment", "create"),
         update_fn=_pick(payments_controller, "update_payment", "update"),
         delete_fn=_pick(payments_controller, "delete_payment", "delete"),
@@ -161,6 +166,7 @@ def _init_swagger(app: Flask) -> None:
         name="animator_agency_contracts", path="/animator_agency_contracts",
         model_cls=AnimatorAgencyContract,
         list_fn=_pick(animator_agency_contract_controller, "find_all", "get_all_contracts", "get_all"),
+        get_fn=_pick(animator_agency_contract_controller, "find_by_id", "get_contract_by_id", "get_by_id"),
         create_fn=_pick(animator_agency_contract_controller, "create_contract", "create"),
         update_fn=_pick(animator_agency_contract_controller, "update_contract", "update"),
         delete_fn=_pick(animator_agency_contract_controller, "delete_contract", "delete"),
