@@ -115,7 +115,7 @@ def _init_swagger(app: Flask) -> None:
     api.add_namespace(make_crud_namespace(
         name="animators", path="/animators", model_cls=Animators,
         list_fn=_pick(animators_controller, "find_all", "get_all_animators", "get_all"),
-        get_fn=_pick(animators_controller, "find_by_id", "get_animator_by_id", "get_by_id"),
+        #get_fn=_pick(animators_controller, "find_by_id", "get_animator_by_id", "get_by_id"),
         create_fn=_pick(animators_controller, "create_animator", "create"),
         update_fn=_pick(animators_controller, "update_animator", "update"),
         delete_fn=_pick(animators_controller, "delete_animator", "delete"),
