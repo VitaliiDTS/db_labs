@@ -118,7 +118,7 @@ def _init_swagger(app: Flask) -> None:
         get_fn=_pick(animators_controller, "find_by_id", "get_animator_by_id", "get_by_id"),
         create_fn=_pick(animators_controller, "create_animator", "create"),
         update_fn=_pick(animators_controller, "update_animator", "update"),
-        delete_fn=_pick(animators_controller, "delete_animator", "delete"),
+        #delete_fn=_pick(animators_controller, "delete_animator", "delete"),
     ))
 
 
