@@ -1,81 +1,99 @@
 from __future__ import annotations
-from typing import Callable, Dict, Any, Type
-from flask_restx import Namespace, Resource, fields
+from typing import Callable, Any, Optional, Dict, List
+
 from flask import request
-from http import HTTPStatus
-from sqlalchemy import Integer, String, Float, Boolean, Date, DateTime, Text
-from sqlalchemy.orm import DeclarativeMeta
+from flask_restx import Namespace, Resource, fields
+from werkzeug.exceptions import NotFound, BadRequest
 
-_TYPE_MAP = {
-    Integer:  fields.Integer,
-    String:   fields.String,
-    Text:     fields.String,
-    Float:    fields.Float,
-    Boolean:  fields.Boolean,
-    Date:     fields.String,
-    DateTime: fields.String,
-}
+def _to_dto(obj: Any) -> Dict[str, Any]:
+    if obj is None:
+        raise NotFound("Object not found")
+    if hasattr(obj, "put_into_dto") and callable(obj.put_into_dto):
+        return obj.put_into_dto()
+    raise BadRequest("Model has no put_into_dto()")
 
-def _build_restx_model_from_sqla(api: Namespace, model_cls: Type[DeclarativeMeta]) -> fields.Model:
-    schema: Dict[str, Any] = {}
-    for col in model_cls.__table__.columns:
-        f = None
-        for sa_t, fx in _TYPE_MAP.items():
-            if isinstance(col.type, sa_t):
-                f = fx
-                break
-        f = f or fields.String
-        schema[col.name] = f(readonly=col.primary_key, required=(not col.nullable and not col.primary_key))
-    return api.model(model_cls.__name__, schema)
+def _to_dtos(items: List[Any]) -> List[Dict[str, Any]]:
+    return [_to_dto(i) for i in items]
 
 def make_crud_namespace(
+    *,
     name: str,
     path: str,
-    model_cls: Type[DeclarativeMeta],
-    *,
-    list_fn: Callable[[], list],
-    get_fn: Callable[[int], Any],
-    create_fn: Callable[[Any], None],
-    update_fn: Callable[[int, Any], None],
-    delete_fn: Callable[[int], None],
+    model_cls: type,
+    list_fn: Optional[Callable[[], List[Any]]] = None,
+    get_fn: Optional[Callable[[int], Any]] = None,
+    create_fn: Optional[Callable[[Any], None]] = None,
+    update_fn: Optional[Callable[[int, Any], None]] = None,
+    delete_fn: Optional[Callable[[int], None]] = None,
 ) -> Namespace:
-    api = Namespace(name, description=f"{name} CRUD", path=path)
-    m = _build_restx_model_from_sqla(api, model_cls)
+    """
+    Створює RESTX Namespace, який підтримує лише ті методи, що ти передав.
+    Приклад виклику див. у _init_swagger.
+    """
+    ns = Namespace(name, description=f"{name} CRUD", path=path)
 
-    @api.route("")
-    class Collection(Resource):
-        @api.marshal_list_with(m, code=HTTPStatus.OK)
-        def get(self):  # list
-            items = list_fn()
-            return [i.put_into_dto() for i in items]
+    # Проста Swagger-модель (опційно). Можеш видалити або доповнити.
+    # Вона тут як заглушка, щоби у /docs було хоч щось відображено.
+    dto = ns.model(f"{name}_dto", {
+        "id": fields.Integer(required=False, description="ID"),
+        # інші поля можна додати вручну для кращого опису
+    })
 
-        @api.expect(m, validate=True)
-        @api.marshal_with(m, code=HTTPStatus.CREATED)
-        def post(self):  # create
-            payload = request.get_json()
-            obj = model_cls.create_from_dto(payload)
+    # -------- /collection --------
+    # Генеруємо клас динамічно і додаємо тільки наявні методи.
+    coll_attrs = {}
+
+    if list_fn:
+        def get(self):
+            return _to_dtos(list_fn()), 200
+        coll_attrs["get"] = get
+
+    if create_fn:
+        def post(self):
+            data = request.get_json(force=True, silent=True) or {}
+            try:
+                obj = model_cls.create_from_dto(data)
+            except Exception as e:
+                raise BadRequest(f"Bad payload: {e}")
             create_fn(obj)
-            return obj.put_into_dto(), HTTPStatus.CREATED
+            return _to_dto(obj), 201
+        coll_attrs["post"] = post
 
-    @api.route("/<int:item_id>")
-    @api.response(404, "Not found")
-    class Item(Resource):
-        @api.marshal_with(m)
-        def get(self, item_id: int):  # retrieve
-            obj = get_fn(item_id)
-            return obj.put_into_dto()
+    if not coll_attrs:
+        # Якщо не передали жодного методу для колекції — все одно створимо ресурс,
+        # але без методів (Flask сам дасть 405).
+        pass
 
-        @api.expect(m, validate=True)
-        @api.marshal_with(m, code=HTTPStatus.OK)
-        def put(self, item_id: int):  # update
-            payload = request.get_json()
-            obj = model_cls.create_from_dto(payload)
+    Coll = type("Collection", (Resource,), coll_attrs)
+    ns.add_resource(Coll, "")
+
+    # -------- /item/<id> --------
+    item_attrs = {}
+
+    if get_fn:
+        def get(self, item_id: int):
+            return _to_dto(get_fn(item_id)), 200
+        item_attrs["get"] = get
+
+    if update_fn:
+        def put(self, item_id: int):
+            data = request.get_json(force=True, silent=True) or {}
+            try:
+                obj = model_cls.create_from_dto(data)
+            except Exception as e:
+                raise BadRequest(f"Bad payload: {e}")
             update_fn(item_id, obj)
-            fresh = get_fn(item_id)
-            return fresh.put_into_dto(), HTTPStatus.OK
+            # Повертаємо payload, який прислав клієнт (після нормалізації)
+            return _to_dto(obj), 200
+        item_attrs["put"] = put
 
-        def delete(self, item_id: int):  # delete
+    if delete_fn:
+        def delete(self, item_id: int):
             delete_fn(item_id)
-            return "", HTTPStatus.NO_CONTENT
+            return "", 204
+        item_attrs["delete"] = delete
 
-    return api
+    Item = type("Item", (Resource,), item_attrs)
+    ns.add_resource(Item, "/<int:item_id>")
+
+    return ns
