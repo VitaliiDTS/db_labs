@@ -26,21 +26,15 @@ def make_crud_namespace(
     update_fn: Optional[Callable[[int, Any], None]] = None,
     delete_fn: Optional[Callable[[int], None]] = None,
 ) -> Namespace:
-    """
-    Створює RESTX Namespace, який підтримує лише ті методи, що ти передав.
-    Приклад виклику див. у _init_swagger.
-    """
+
     ns = Namespace(name, description=f"{name} CRUD", path=path)
 
-    # Проста Swagger-модель (опційно). Можеш видалити або доповнити.
-    # Вона тут як заглушка, щоби у /docs було хоч щось відображено.
+
     dto = ns.model(f"{name}_dto", {
         "id": fields.Integer(required=False, description="ID"),
-        # інші поля можна додати вручну для кращого опису
     })
 
-    # -------- /collection --------
-    # Генеруємо клас динамічно і додаємо тільки наявні методи.
+
     coll_attrs = {}
 
     if list_fn:
@@ -60,14 +54,13 @@ def make_crud_namespace(
         coll_attrs["post"] = post
 
     if not coll_attrs:
-        # Якщо не передали жодного методу для колекції — все одно створимо ресурс,
-        # але без методів (Flask сам дасть 405).
+
         pass
 
     Coll = type("Collection", (Resource,), coll_attrs)
     ns.add_resource(Coll, "")
 
-    # -------- /item/<id> --------
+
     item_attrs = {}
 
     if get_fn:
@@ -83,7 +76,7 @@ def make_crud_namespace(
             except Exception as e:
                 raise BadRequest(f"Bad payload: {e}")
             update_fn(item_id, obj)
-            # Повертаємо payload, який прислав клієнт (після нормалізації)
+
             return _to_dto(obj), 200
         item_attrs["put"] = put
 

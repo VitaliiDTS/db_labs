@@ -1,0 +1,64 @@
+{
+    "family": "db-labs-task",
+    "containerDefinitions": [
+        {
+            "cpu": 0,
+            "environment": [
+                {
+                    "name": "FLASK_ENV",
+                    "value": "production"
+                },
+                {
+                    "name": "DB_SECRET_NAME",
+                    "value": "lab/mysql"
+                },
+                {
+                    "name": "AWS_REGION",
+                    "value": "eu-north-1"
+                }
+            ],
+            "environmentFiles": [],
+            "essential": true,
+            "image": "801886451923.dkr.ecr.eu-north-1.amazonaws.com/db-labs-api:latest",
+            "logConfiguration": {
+                "logDriver": "awslogs",
+                "options": {
+                    "awslogs-group": "/ecs/db-labs-task",
+                    "awslogs-create-group": "true",
+                    "awslogs-region": "eu-north-1",
+                    "awslogs-stream-prefix": "ecs"
+                },
+                "secretOptions": []
+            },
+            "mountPoints": [],
+            "name": "api",
+            "portMappings": [
+                {
+                    "appProtocol": "http",
+                    "containerPort": 8080,
+                    "hostPort": 8080,
+                    "name": "api-8080-tcp",
+                    "protocol": "tcp"
+                }
+            ],
+            "systemControls": [],
+            "ulimits": [],
+            "volumesFrom": []
+        }
+    ],
+    "taskRoleArn": "arn:aws:iam::801886451923:role/ecs-task-secrets-role",
+    "executionRoleArn": "arn:aws:iam::801886451923:role/ecsTaskExecutionRole",
+    "networkMode": "awsvpc",
+    "volumes": [],
+    "placementConstraints": [],
+    "requiresCompatibilities": [
+        "FARGATE"
+    ],
+    "cpu": "512",
+    "memory": "1024",
+    "runtimePlatform": {
+        "cpuArchitecture": "X86_64",
+        "operatingSystemFamily": "LINUX"
+    },
+    "enableFaultInjection": false
+}
